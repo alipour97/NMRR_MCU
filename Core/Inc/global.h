@@ -13,12 +13,16 @@
 
 extern UART_HandleTypeDef huart2;
 extern SPI_HandleTypeDef hspi1;
+extern TIM_HandleTypeDef htim2;
 extern uint8_t uart_buffer[];
+
+extern uint32_t time_buff[];
 extern uint32_t adc_buff[];
+extern uint32_t tq_buff[];
 extern uint16_t adc_buff_idx;
 
 
-// function declaration
+// function declarationCNY
 void adc_to_buf(uint32_t new_val);
 uint32_t read_adc_data();
 //extern uint8_t spi_read_reg;
@@ -26,7 +30,8 @@ uint32_t read_adc_data();
 #define PC_UART &huart2
 #define SPI &hspi1
 #define UART_BUFFER_SIZE 1024
-#define ADC_BUFFER_SIZE 10
+#define ADC_BUFFER_SIZE 50
+#define TIM htim2
 
 enum SPI_STATUS {
   IDLE,

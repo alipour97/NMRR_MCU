@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include "ad717x.h"
 #include "global.h"
+#include "ad411x_regs.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -50,91 +51,15 @@ DMA_HandleTypeDef hdma_usart2_rx;
 
 /* USER CODE BEGIN PV */
 uint8_t uart_buffer[UART_BUFFER_SIZE];
-uint32_t adc_buff[ADC_BUFFER_SIZE];
-uint16_t adc_buff_idx = 0;
-//ad717x_dev *pad717x_dev;
 
-ad717x_st_reg ad4111_regs[] = {
-	{ AD717X_STATUS_REG, 0x00, 1 },
-	{
-		AD717X_ADCMODE_REG,
-		AD717X_ADCMODE_REG_MODE(0),
-		2
-	},
-	{ AD717X_IFMODE_REG, 0x0000, 2 },
-	{ AD717X_REGCHECK_REG, 0x0000, 3 },
-	{ AD717X_DATA_REG, 0x0000, 3 },
-	{
-		AD717X_GPIOCON_REG,
-		AD717X_GPIOCON_REG_SYNC_EN,
-		2
-	},
-	{ AD717X_ID_REG, 0x0000, 2 },
-	{ AD717X_CHMAP0_REG, 0x0000, 2 },
-	{ AD717X_CHMAP1_REG, 0x0000, 2 },
-	{ AD717X_CHMAP2_REG, 0x0000, 2 },
-	{ AD717X_CHMAP3_REG, 0x0000, 2 },
-	{ AD717X_CHMAP4_REG, 0x0000, 2 },
-	{ AD717X_CHMAP5_REG, 0x0000, 2 },
-	{ AD717X_CHMAP6_REG, 0x0000, 2 },
-	{ AD717X_CHMAP7_REG, 0x0000, 2 },
-	{ AD717X_CHMAP8_REG, 0x0000, 2 },
-	{ AD717X_CHMAP9_REG, 0x0000, 2 },
-	{ AD717X_CHMAP10_REG, 0x0000, 2 },
-	{ AD717X_CHMAP11_REG, 0x0000, 2 },
-	{ AD717X_CHMAP12_REG, 0x0000, 2 },
-	{ AD717X_CHMAP13_REG, 0x0000, 2 },
-	{ AD717X_CHMAP14_REG, 0x0000, 2 },
-	{ AD717X_CHMAP15_REG, 0x0000, 2 },
-	{ AD717X_SETUPCON0_REG, 0x0000 | AD717X_SETUP_CONF_REG_REF_SEL(2), 2 },
-	{ AD717X_SETUPCON1_REG, 0x0000 | AD717X_SETUP_CONF_REG_REF_SEL(2), 2 },
-	{ AD717X_SETUPCON2_REG, 0x0000 | AD717X_SETUP_CONF_REG_REF_SEL(2), 2 },
-	{ AD717X_SETUPCON3_REG, 0x0000 | AD717X_SETUP_CONF_REG_REF_SEL(2), 2 },
-	{ AD717X_SETUPCON4_REG, 0x0000 | AD717X_SETUP_CONF_REG_REF_SEL(2), 2 },
-	{ AD717X_SETUPCON5_REG, 0x0000 | AD717X_SETUP_CONF_REG_REF_SEL(2), 2 },
-	{ AD717X_SETUPCON6_REG, 0x0000 | AD717X_SETUP_CONF_REG_REF_SEL(2), 2 },
-	{ AD717X_SETUPCON7_REG, 0x0000 | AD717X_SETUP_CONF_REG_REF_SEL(2), 2 },
-	{
-		AD717X_FILTCON0_REG, AD717X_FILT_CONF_REG_ENHFILT(2), 2
-	},
-	{
-		AD717X_FILTCON1_REG, AD717X_FILT_CONF_REG_ENHFILT(2), 2
-	},
-	{
-		AD717X_FILTCON2_REG, AD717X_FILT_CONF_REG_ENHFILT(2), 2
-	},
-	{
-		AD717X_FILTCON3_REG, AD717X_FILT_CONF_REG_ENHFILT(2), 2
-	},
-	{
-		AD717X_FILTCON4_REG, AD717X_FILT_CONF_REG_ENHFILT(2), 2
-	},
-	{
-		AD717X_FILTCON5_REG, AD717X_FILT_CONF_REG_ENHFILT(2), 2
-	},
-	{
-		AD717X_FILTCON6_REG, AD717X_FILT_CONF_REG_ENHFILT(2), 2
-	},
-	{
-		AD717X_FILTCON7_REG, AD717X_FILT_CONF_REG_ENHFILT(2), 2
-	},
-	{AD717X_OFFSET0_REG, 0, 3 },
-	{AD717X_OFFSET1_REG, 0, 3 },
-	{AD717X_OFFSET2_REG, 0, 3 },
-	{AD717X_OFFSET3_REG, 0, 3 },
-	{AD717X_OFFSET4_REG, 0, 3 },
-	{AD717X_OFFSET5_REG, 0, 3 },
-	{AD717X_OFFSET6_REG, 0, 3 },
-	{AD717X_OFFSET7_REG, 0, 3 },
-	{AD717X_GAIN0_REG, 0, 3 },
-	{AD717X_GAIN1_REG, 0, 3 },
-	{AD717X_GAIN2_REG, 0, 3 },
-	{AD717X_GAIN3_REG, 0, 3 },
-	{AD717X_GAIN4_REG, 0, 3 },
-	{AD717X_GAIN5_REG, 0, 3 },
-	{AD717X_GAIN6_REG, 0, 3 },
-	{AD717X_GAIN7_REG, 0, 3 },
-};
+uint32_t time_buff[ADC_BUFFER_SIZE];
+uint32_t adc_buff[ADC_BUFFER_SIZE];
+uint32_t tq_buff[ADC_BUFFER_SIZE];
+
+uint16_t adc_buff_idx = 0;
+
+extern ad717x_st_reg ad4111_regs[];
+
 ad717x_dev *pad717x_dev = NULL;
 static ad717x_st_reg *ad717x_device_map = ad4111_regs;
 static uint8_t ad717x_reg_count = sizeof(ad4111_regs) / sizeof(ad4111_regs[0]);
@@ -205,7 +130,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   ad717x_app_initialize();
 
-  ad717x_configure_device_odr(pad717x_dev, 0, sps_5);
+  ad717x_configure_device_odr(pad717x_dev, 0, sps_1007);
   HAL_Delay(10);
   ad717x_set_channel_status(pad717x_dev, 0, 1);
   HAL_Delay(10);
@@ -411,7 +336,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 230400;
+  huart2.Init.BaudRate = 115200;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;

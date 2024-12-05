@@ -107,6 +107,7 @@ extern void handle_command(char* txt_in)
 			{
 				spi_status = SENDING;
 				adc_buff_idx = 0;
+				TIM.Instance->CNT = 0;
 			}
 			else
 				spi_status = IDLE;

@@ -14,11 +14,14 @@ void send_adc_data();
 
 void adc_to_buf(uint32_t new_val)
 {
+	time_buff[adc_buff_idx] = TIM.Instance->CNT;
 	adc_buff[adc_buff_idx++] = new_val;
+
 	if(adc_buff_idx >= ADC_BUFFER_SIZE)
 	{
 		send_adc_data();
 		adc_buff_idx = 0;
+//		TIM.Instance->CNT = 0;
 	}
 }
 
@@ -26,7 +29,8 @@ void send_adc_data()
 {
 	HAL_UART_Transmit(PC_UART, (uint8_t*)"{fb,", 4, 10);
 	HAL_UART_Transmit(PC_UART, (uint8_t*)adc_buff, sizeof(uint32_t) * ADC_BUFFER_SIZE, 100);
-	HAL_UART_Transmit(PC_UART, (uint8_t*)",end}\r\n", 7, 10);
+	HAL_UART_Transmit(PC_UART, (uint8_t*)time_buff, sizeof(uint32_t) * ADC_BUFFER_SIZE, 100);
+	HAL_UART_Transmit(PC_UART, (uint8_t*)",end} \r\n", 8, 10);
 }
 
 uint32_t read_adc_data()
