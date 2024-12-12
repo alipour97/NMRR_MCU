@@ -37,7 +37,7 @@ extern int check_command(void)
 
 extern void send_string(const char *msg)
 {
-	HAL_UART_Transmit(PC_UART, (uint8_t *)msg, strlen(msg), 10);
+	HAL_UART_Transmit(PC_UART, (uint8_t *)msg, strlen(msg), 100);
 }
 
 extern void reset_uart(void)
@@ -55,17 +55,6 @@ extern void handle_command(char* txt_in)
 	if(!strcmp(command, "get_id")){
 		spi_status = GETID;
 
-	}
-	else if(!strcmp(command, "getid"))
-	{
-		while(HAL_GPIO_ReadPin(DRY_GPIO_Port, DRY_Pin) == GPIO_PIN_SET);
-		ad717x_st_reg *pReg;
-//		ad717x_dev *pad717x_dev1 = NULL;
-		AD717X_ReadRegister(pad717x_dev, 0x07);
-		pReg = AD717X_GetReg(pad717x_dev, 0x07);
-		char hexString[9];  // Buffer to store "0x" + 4 hex digits + null terminator
-		sprintf(hexString, "0x%04x\r\n", (unsigned int)pReg->value);  // Format as hex string with "0x" prefix
-		send_string(hexString);
 	}
 	else if(!strcmp(command, "getreg"))
 	{

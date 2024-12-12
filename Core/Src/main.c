@@ -48,9 +48,11 @@ TIM_HandleTypeDef htim2;
 
 UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_usart2_rx;
+DMA_HandleTypeDef hdma_usart2_tx;
 
 /* USER CODE BEGIN PV */
 uint8_t uart_buffer[UART_BUFFER_SIZE];
+uint8_t tx_buffer[7+7+2*sizeof(uint32_t) * ADC_BUFFER_SIZE] = {0};
 
 uint32_t time_buff[ADC_BUFFER_SIZE];
 uint32_t adc_buff[ADC_BUFFER_SIZE];
@@ -130,7 +132,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   ad717x_app_initialize();
 
-  ad717x_configure_device_odr(pad717x_dev, 0, sps_1007);
+  ad717x_configure_device_odr(pad717x_dev, 0, sps_100);
   HAL_Delay(10);
   ad717x_set_channel_status(pad717x_dev, 0, 1);
   HAL_Delay(10);
@@ -152,7 +154,7 @@ int main(void)
   ad717x_enable_input_buffer(pad717x_dev, 1, 0, 0);
   HAL_Delay(10);
   // Initial Message for PC:
-  char *init_msg = "Welcome to Pourostad Project\r\n";
+  char *init_msg = "{inf,\r\nWelcome to Pourostad Project,end}\r\n";
   HAL_UART_Transmit(PC_UART, (uint8_t*)init_msg, strlen(init_msg), 10);
   HAL_UART_Receive_DMA(PC_UART, uart_buffer, UART_BUFFER_SIZE);
   /* USER CODE END 2 */
@@ -346,7 +348,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
+  huart2.Init.BaudRate = 1152000;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -374,8 +376,11 @@ static void MX_DMA_Init(void)
 
   /* DMA interrupt init */
   /* DMA1_Stream5_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 1);
   HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
+  /* DMA1_Stream6_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream6_IRQn, 0, 2);
+  HAL_NVIC_EnableIRQ(DMA1_Stream6_IRQn);
 
 }
 
@@ -416,7 +421,7 @@ static void MX_GPIO_Init(void)
   HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
-  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 2);
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
@@ -466,8 +471,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		  		if(adc_sm == ADC_IDLE)
 		  		{
 		  			float data = (((float) pReg->value / (1<<23))-1) * 25;
-					char hexString[12];
-					sprintf(hexString, "%.4f\r\n", data);
+					char hexString[24];
+					sprintf(hexString, "{inf,\r\n%.4f,end}\r\n", data);
 					send_string(hexString);
 		  		}
 		  		else
@@ -480,8 +485,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		  	}
 		  	else
 		  	{
-				char hexString[12];  // Buffer to store "0x" + 4 hex digits + null terminator
-				sprintf(hexString, "0x%04x\r\n", (unsigned int)pReg->value);  // Format as hex string with "0x" prefix
+				char hexString[24];  // Buffer to store "0x" + 4 hex digits + null terminator
+				sprintf(hexString, "{inf,\r\n0x%04x,end}\r\n", (unsigned int)pReg->value);  // Format as hex string with "0x" prefix
 				send_string(hexString);
 		  	}
 	  }
@@ -490,7 +495,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		  ad717x_st_reg *pReg = (ad717x_st_reg*)spi_write_reg.pReg;
 		  HAL_SPI_Transmit(SPI, spi_write_reg.Tx, pReg->size + 1, 100);
 
-		  send_string("write done\r\n");
+		  send_string("{inf,\r\nwrite done,end}\r\n");
 		  spi_status = IDLE;
 		  AD717X_ReadRegister(pad717x_dev, pReg->addr);
 	  }
@@ -505,8 +510,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		HAL_SPI_Transmit(SPI, &Tx, 1, 10);
 		HAL_SPI_Receive(SPI, Rx, 2, 100);
 		uint16_t receivedData = (Rx[0] << 8) | Rx[1];
-		char hexString[9];  // Buffer to store "0x" + 4 hex digits + null terminator
-		sprintf(hexString, "0x%04x\r\n", receivedData);  // Format as hex string with "0x" prefix
+		char hexString[22];  // Buffer to store "0x" + 4 hex digits + null terminator
+		sprintf(hexString, "{inf,\r\n0x%04x,end}\r\n", receivedData);  // Format as hex string with "0x" prefix
 		send_string(hexString);
 		spi_status = IDLE;
 	  }
@@ -533,6 +538,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
   } else {
       __NOP();
   }
+}
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
 }
 /* USER CODE END 4 */
 

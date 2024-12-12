@@ -15,6 +15,7 @@ extern UART_HandleTypeDef huart2;
 extern SPI_HandleTypeDef hspi1;
 extern TIM_HandleTypeDef htim2;
 extern uint8_t uart_buffer[];
+extern uint8_t tx_buffer[];
 
 extern uint32_t time_buff[];
 extern uint32_t adc_buff[];

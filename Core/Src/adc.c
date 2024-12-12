@@ -27,10 +27,17 @@ void adc_to_buf(uint32_t new_val)
 
 void send_adc_data()
 {
-	HAL_UART_Transmit(PC_UART, (uint8_t*)"{fb,", 4, 10);
-	HAL_UART_Transmit(PC_UART, (uint8_t*)adc_buff, sizeof(uint32_t) * ADC_BUFFER_SIZE, 100);
-	HAL_UART_Transmit(PC_UART, (uint8_t*)time_buff, sizeof(uint32_t) * ADC_BUFFER_SIZE, 100);
-	HAL_UART_Transmit(PC_UART, (uint8_t*)",end} \r\n", 8, 10);
+
+	sprintf((char*)tx_buffer, "{fdb,\r\n");
+	memcpy(tx_buffer + 7, (uint8_t*) time_buff, sizeof(uint32_t) * ADC_BUFFER_SIZE);
+	memcpy(tx_buffer + 7 + sizeof(uint32_t) * ADC_BUFFER_SIZE, (uint8_t*) adc_buff, sizeof(uint32_t) * ADC_BUFFER_SIZE);
+	sprintf((char*)tx_buffer+ 7 + 2 * sizeof(uint32_t) * ADC_BUFFER_SIZE, ",end}\r\n");
+
+	HAL_UART_Transmit_DMA(PC_UART, tx_buffer, 2 * sizeof(uint32_t) * ADC_BUFFER_SIZE + 14);
+//	HAL_UART_Transmit(PC_UART, (uint8_t*)"{fb,", 4, 10);
+//	HAL_UART_Transmit(PC_UART, (uint8_t*)time_buff, sizeof(uint32_t) * ADC_BUFFER_SIZE, 100);
+//	HAL_UART_Transmit(PC_UART, (uint8_t*)adc_buff, sizeof(uint32_t) * ADC_BUFFER_SIZE, 100);
+//	HAL_UART_Transmit(PC_UART, (uint8_t*)",end}\r\n", 8, 10);
 }
 
 uint32_t read_adc_data()
