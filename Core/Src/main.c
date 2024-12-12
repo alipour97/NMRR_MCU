@@ -171,6 +171,16 @@ int main(void)
 	  {
 		  check_command();
 	  }
+	  if(HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_RESET)
+	  {
+		  HAL_Delay(50);
+		  if(HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_RESET)
+		  {
+			  for(int i=0; i<ADC_BUFFER_SIZE; i++)
+				  time_buff[i] = 16*i+3;
+			  HAL_UART_Transmit(&huart2, (uint8_t*)time_buff, ADC_BUFFER_SIZE*4, 100);
+		  }
+	  }
 //	  if(HAL_GPIO_ReadPin(DRY_GPIO_Port, DRY_Pin) == GPIO_PIN_RESET)
 //	  {
 //		  int32_t pData;
