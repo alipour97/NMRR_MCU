@@ -50,57 +50,67 @@ extern void reset_uart(void)
 
 extern void handle_command(char* txt_in)
 {
+	uint8_t addr = 0;
+	uint32_t value = 0;
 	char *command = txt_in;
 	char *addr_str = (char*)uart_buffer + strlen(command) + 2;
+
+	char *endptr = strchr((char*)addr_str, ',');
+	int length = endptr - (char*)addr_str;
+	char *value_str = (char*)addr_str + length + 1;
+	if(strchr((char*)uart_buffer, '}') != NULL)
+	{
+		addr = (uint8_t)strtoul(addr_str, NULL, 16);
+		value = (uint32_t)strtoul(value_str, NULL, 16);
+	} else return;
 	if(!strcmp(command, "get_id")){
 		spi_status = GETID;
-
 	}
 	else if(!strcmp(command, "getreg"))
 	{
-		if(strchr((char*)uart_buffer, '}') != NULL)
-		{
-			uint8_t addr = (uint8_t)strtoul(addr_str, NULL, 16);
-//				ad717x_dev *pad717x_dev1 = NULL;
-//				ad717x_st_reg *pReg;
-			AD717X_ReadRegister(pad717x_dev, addr);
-//				pReg = AD717X_GetReg(pad717x_dev, addr);
-//				char hexString[12];  // Buffer to store "0x" + 4 hex digits + null terminator
-//				sprintf(hexString, "%u:0x%04x\r\n", spi_read_reg, (unsigned int)pReg->value);  // Format as hex string with "0x" prefix
-//				send_string(hexString);
-
-		} else return;
-
+		AD717X_ReadRegister(pad717x_dev, addr);
 	}
 	else if(!strcmp(command, "writereg"))
 	{
-		char *endptr = strchr((char*)addr_str, ',');
-		int length = endptr - (char*)addr_str;
-		char *value_str = (char*)addr_str + length + 1;
-		if(strchr((char*)uart_buffer, '}') != NULL)
-		{
-			uint8_t addr = (uint8_t)strtoul(addr_str, NULL, 16);
-			uint32_t value = (uint32_t)strtoul(value_str, NULL, 16);
-
-			ad717x_st_reg *pReg = AD717X_GetReg(pad717x_dev, addr);
-			pReg->value = value;
-			spi_write_reg.value = value;
-			AD717X_WriteRegister(pad717x_dev, addr);
-		} else return;
+		ad717x_st_reg *pReg = AD717X_GetReg(pad717x_dev, addr);
+		pReg->value = value;
+		spi_write_reg.value = value;
+		AD717X_WriteRegister(pad717x_dev, addr);
 	}
 	else if(!strcmp(command, "send"))
 	{
-		if(strchr((char*)uart_buffer, '}') != NULL)
+		if(spi_status != SENDING && adc_sm == ADC_IDLE)
 		{
-			if(spi_status != SENDING && adc_sm == ADC_IDLE)
-			{
-				spi_status = SENDING;
-				adc_buff_idx = 0;
-				TIM.Instance->CNT = 0;
-			}
-			else
-				spi_status = IDLE;
-		} else return;
+
+			adc_buff_idx = 0;
+			TIM.Instance->CNT = 0;
+//			ad717x_set_adc_mode(pad717x_dev, SINGLE);
+//			delay_us(100);
+//			spi_status = READING;
+//			adc_sm = ADC_READING;
+//			AD717X_ReadRegister(pad717x_dev, 0x04);
+//			adc_channel_offset = AD717X_GetReg(pad717x_dev, AD717X_STATUS_REG)->value & 0x000f;
+			spi_status = SENDING;
+//			ad717x_set_adc_mode(pad717x_dev, CONTINUOUS);
+		}
+		else
+		{
+			spi_status = IDLE;
+			adc_sm = ADC_IDLE;
+		}
+	}
+	else if(!strcmp(command, "adc_mode"))
+	{
+//		if(addr == 0)
+		ad717x_set_adc_mode(pad717x_dev, addr);
+	}
+	else if(!strcmp(command, "dac_read"))
+	{
+		dac_readreg(addr);
+	}
+	else if(!strcmp(command, "dac_write"))
+	{
+		dac_writereg(addr, (uint16_t)value);
 	}
 	else{
 		send_string("{Unknown msg,end}\r\n");

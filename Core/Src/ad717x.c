@@ -38,6 +38,7 @@
 /***************************** Include Files **********************************/
 /******************************************************************************/
 #include <stdlib.h>
+#include <stdio.h>
 #include "ad717x.h"
 #include <global.h>
 #include <string.h>
@@ -49,6 +50,8 @@
 
 extern struct spi_read spi_read_reg;
 extern struct spi_write spi_write_reg;
+
+extern void send_string(const char *msg);
 /***************************************************************************//**
  * @brief Set channel status - Enable/Disable
  * @param device - AD717x Device descriptor.
@@ -108,9 +111,11 @@ int ad717x_set_adc_mode(ad717x_dev *device, enum ad717x_mode adc_mode)
 
 	/* Set the required conversion mode, write to register */
 	adc_mode_reg->value |= AD717X_ADCMODE_REG_MODE(adc_mode);
+	device->mode = adc_mode;
 	if (AD717X_WriteRegister(device, AD717X_ADCMODE_REG) < 0)
 		return -EINVAL;
-	device->mode = adc_mode;
+
+
 
 	return 0;
 }
@@ -414,8 +419,8 @@ int32_t AD717X_ReadRegister(ad717x_dev *device,
 			    uint8_t addr)
 {
 	int32_t ret       = 0;
-//	uint8_t Tx = 0;
-//	uint8_t Rx [8] = {0};
+	uint8_t Tx = 0;
+	uint8_t Rx [8] = {0};
 //	uint8_t buffer[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 //	uint8_t i         = 0;
 //	uint8_t check8    = 0;
@@ -432,17 +437,31 @@ int32_t AD717X_ReadRegister(ad717x_dev *device,
 	/* Build the Command word */
 	spi_read_reg.Tx = AD717X_COMM_REG_WEN | AD717X_COMM_REG_RD |
 		    AD717X_COMM_REG_RA(pReg->addr);
+	Tx = spi_read_reg.Tx;
 	spi_read_reg.pReg = pReg;
 //	spi_read_reg.size = pReg->size;
 
 	/* Read data from the device */
 
-	spi_status = READING;
+	if(device->mode == CONTINUOUS)
+		spi_status = READING;
+	else
+	{
+		HAL_SPI_Transmit(SPI, &Tx, 1, 100);
+		HAL_SPI_Receive(SPI, Rx, pReg->size, 100);
+		pReg->value = 0;
+		for(int i = 0; i < pReg->size; i++) {
+			pReg->value <<= 8;
+			pReg->value += Rx[i];
+		}
+		char hexString[24];  // Buffer to store "0x" + 4 hex digits + null terminator
+		sprintf(hexString, "{inf,\r\n0x%04x,end}\r\n", (unsigned int)pReg->value);  // Format as hex string with "0x" prefix
+		send_string(hexString);
+//		HAL_SPI_TransmitReceive(SPI, buffer, buffer, pReg->size + 1, 100);
+	}
 //	while(spi_status == TRIGGER);
 
-//	HAL_SPI_Transmit(SPI, &Tx, 1, 100);
-//	HAL_SPI_Receive(SPI, Rx, pReg->size, 100);
-//	HAL_SPI_TransmitReceive(SPI, buffer, buffer, pReg->size + 1, 100);
+
 //	spi_status = IDLE;
 
 	/* Check the CRC */
@@ -470,10 +489,7 @@ int32_t AD717X_ReadRegister(ad717x_dev *device,
 	}
 	*/
 	/* Build the result */
-//	pReg->value = 0;
-//	for(i = 0; i < pReg->size; i++) {
-//		pReg->value <<= 8;
-//		pReg->value += Rx[i];
+
 //	}
 
 	return ret;
@@ -530,7 +546,22 @@ int32_t AD717X_WriteRegister(ad717x_dev *device,
 //				       preg->size + 2 : preg->size + 1);
 	memcpy(spi_write_reg.Tx, wrBuf, 8);
 	spi_write_reg.pReg = preg;
-	spi_status = WRITING;
+
+//	if(preg->addr == AD717X_ADCMODE_REG)
+//	{
+//		while(((preg->value & 0x00f0) >> 4) != device->mode)
+//		{
+//			ret = (int) HAL_SPI_Transmit(SPI, wrBuf, preg->size + 1, 100);
+//
+//		}
+//
+//	}
+	if(device->mode == CONTINUOUS)
+		spi_status = WRITING;
+	else
+	{
+		ret = (int) HAL_SPI_Transmit(SPI, wrBuf, preg->size + 1, 100);
+	}
 //	ret = (int) HAL_SPI_Transmit(SPI, wrBuf, preg->size + 1, 100);
 	ret = 0;
 	return ret;
@@ -923,4 +954,28 @@ int32_t AD717X_remove(ad717x_dev *dev)
 	return ret;
 }
 
+void ad717x_set_clock(ad717x_dev *dev, uint32_t clcck_sel)
+{
+	ad717x_st_reg *pReg = AD717X_GetReg(dev, AD717X_ADCMODE_REG);
 
+	pReg->value |= AD717X_ADCMODE_REG_CLKSEL(clcck_sel);
+	spi_write_reg.value = AD717X_ADCMODE_REG_CLKSEL(clcck_sel);
+	AD717X_WriteRegister(dev, AD717X_ADCMODE_REG);
+}
+
+void ad717x_set_data_stat(ad717x_dev *dev, bool stat)
+{
+	ad717x_st_reg *reg_ptr;
+//	ad717x_st_reg *datareg_ptr;
+	/* Get interface mode register pointer */
+	reg_ptr = AD717X_GetReg(dev, AD717X_IFMODE_REG);
+	/* Get data register pointer */
+//	datareg_ptr = AD717X_GetReg(device, AD717X_DATA_REG);
+	if(stat)
+		reg_ptr->value |= AD717X_IFMODE_REG_DATA_STAT;
+	else
+		reg_ptr->value &= ~(AD717X_IFMODE_REG_DATA_STAT);
+	AD717X_WriteRegister(dev, AD717X_IFMODE_REG);
+	AD717X_ComputeDataregSize(dev);
+
+}

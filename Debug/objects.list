@@ -1,3 +1,4 @@
+"./Core/Src/ad5761r.o"
 "./Core/Src/ad717x.o"
 "./Core/Src/adc.o"
 "./Core/Src/handle_uart.o"

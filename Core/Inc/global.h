@@ -20,12 +20,16 @@ extern uint8_t tx_buffer[];
 extern uint32_t time_buff[];
 extern uint32_t adc_buff[];
 extern uint32_t tq_buff[];
-extern uint16_t adc_buff_idx;
+extern uint32_t tq_time_buff[];
+extern volatile uint16_t adc_buff_idx;
+extern uint32_t adc_channel_offset;
 
 
 // function declarationCNY
 void adc_to_buf(uint32_t new_val);
 uint32_t read_adc_data();
+void dac_readreg(uint8_t addr);
+void dac_writereg(uint8_t addr, uint16_t value);
 //extern uint8_t spi_read_reg;
 
 #define PC_UART &huart2
@@ -33,6 +37,7 @@ uint32_t read_adc_data();
 #define UART_BUFFER_SIZE 1024
 #define ADC_BUFFER_SIZE 50
 #define TIM htim2
+#define ENABLED_CHANNELS 2
 
 enum SPI_STATUS {
   IDLE,
@@ -41,7 +46,8 @@ enum SPI_STATUS {
   WRITING,
   GETID,
   SPI_NOP,
-  SENDING
+  SENDING,
+  CHANNEL_OFFSET
 };
 
 enum ADC_SM {

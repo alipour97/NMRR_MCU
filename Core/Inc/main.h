@@ -73,6 +73,8 @@ int32_t ad717x_app_initialize(void);
 #define USART_TX_GPIO_Port GPIOA
 #define USART_RX_Pin GPIO_PIN_3
 #define USART_RX_GPIO_Port GPIOA
+#define SYNC_Pin GPIO_PIN_1
+#define SYNC_GPIO_Port GPIOB
 #define DRY_Pin GPIO_PIN_7
 #define DRY_GPIO_Port GPIOC
 #define DRY_EXTI_IRQn EXTI9_5_IRQn

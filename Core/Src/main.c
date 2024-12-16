@@ -43,6 +43,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 SPI_HandleTypeDef hspi1;
+SPI_HandleTypeDef hspi2;
 
 TIM_HandleTypeDef htim2;
 
@@ -52,13 +53,15 @@ DMA_HandleTypeDef hdma_usart2_tx;
 
 /* USER CODE BEGIN PV */
 uint8_t uart_buffer[UART_BUFFER_SIZE];
-uint8_t tx_buffer[7+7+2*sizeof(uint32_t) * ADC_BUFFER_SIZE] = {0};
+uint8_t tx_buffer[7+7+4*sizeof(uint32_t) * ADC_BUFFER_SIZE] = {0};
 
 uint32_t time_buff[ADC_BUFFER_SIZE];
 uint32_t adc_buff[ADC_BUFFER_SIZE];
+uint32_t tq_time_buff[ADC_BUFFER_SIZE];
 uint32_t tq_buff[ADC_BUFFER_SIZE];
 
-uint16_t adc_buff_idx = 0;
+uint16_t volatile adc_buff_idx = 0;
+uint32_t adc_channel_offset = 0;
 
 extern ad717x_st_reg ad4111_regs[];
 
@@ -87,6 +90,7 @@ static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_SPI2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -129,21 +133,37 @@ int main(void)
   MX_USART2_UART_Init();
   MX_SPI1_Init();
   MX_TIM2_Init();
+  MX_SPI2_Init();
   /* USER CODE BEGIN 2 */
   ad717x_app_initialize();
 
-  ad717x_configure_device_odr(pad717x_dev, 0, sps_100);
-  HAL_Delay(10);
-  ad717x_set_channel_status(pad717x_dev, 0, 1);
+
+  ad717x_configure_device_odr(pad717x_dev, 0, sps_1007);
   HAL_Delay(10);
   ad717x_set_adc_mode(pad717x_dev, CONTINUOUS);
 
+  ad717x_set_clock(pad717x_dev, 3);
   union ad717x_analog_inputs AIN_0;
   AIN_0.analog_input_pairs = VIN0_VIN1;
   HAL_Delay(10);
   ad717x_connect_analog_input(pad717x_dev, 0, AIN_0);
   HAL_Delay(10);
   ad717x_assign_setup(pad717x_dev, 0, 0);
+  HAL_Delay(10);
+  ad717x_set_channel_status(pad717x_dev, 0, 1);
+
+
+
+  union ad717x_analog_inputs AIN_2;
+  AIN_2.analog_input_pairs = VIN2_VIN3;
+  HAL_Delay(10);
+  ad717x_connect_analog_input(pad717x_dev, 2, AIN_2);
+  HAL_Delay(10);
+  ad717x_set_channel_status(pad717x_dev, 2, 1);
+  HAL_Delay(10);
+  ad717x_assign_setup(pad717x_dev, 2, 0);
+
+
   HAL_Delay(10);
   ad717x_set_polarity(pad717x_dev, 1, 0);
   HAL_Delay(10);
@@ -153,6 +173,9 @@ int main(void)
   HAL_Delay(10);
   ad717x_enable_input_buffer(pad717x_dev, 1, 0, 0);
   HAL_Delay(10);
+
+  ad717x_set_data_stat(pad717x_dev, true);
+
   // Initial Message for PC:
   char *init_msg = "{inf,\r\nWelcome to Pourostad Project,end}\r\n";
   HAL_UART_Transmit(PC_UART, (uint8_t*)init_msg, strlen(init_msg), 10);
@@ -173,25 +196,7 @@ int main(void)
 	  {
 		  check_command();
 	  }
-	  if(HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_RESET)
-	  {
-		  HAL_Delay(50);
-		  if(HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_RESET)
-		  {
-			  for(int i=0; i<ADC_BUFFER_SIZE; i++)
-				  time_buff[i] = 16*i+3;
-			  HAL_UART_Transmit(&huart2, (uint8_t*)time_buff, ADC_BUFFER_SIZE*4, 100);
-		  }
-	  }
-//	  if(HAL_GPIO_ReadPin(DRY_GPIO_Port, DRY_Pin) == GPIO_PIN_RESET)
-//	  {
-//		  int32_t pData;
-//		  AD717X_ReadData(pad717x_dev, &pData);
-//		  float num = (float)pData / (1 << 31);
-//		  char hexString[20];  // Buffer to store "0x" + 4 hex digits + null terminator
-//			sprintf(hexString, "%.4f\r\n", num);  // Format as hex string with "0x" prefix
-//			send_string(hexString);
-//	  }
+
   }
   /* USER CODE END 3 */
 }
@@ -272,7 +277,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_HIGH;
   hspi1.Init.CLKPhase = SPI_PHASE_2EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_64;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -284,6 +289,44 @@ static void MX_SPI1_Init(void)
   /* USER CODE BEGIN SPI1_Init 2 */
 
   /* USER CODE END SPI1_Init 2 */
+
+}
+
+/**
+  * @brief SPI2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_SPI2_Init(void)
+{
+
+  /* USER CODE BEGIN SPI2_Init 0 */
+
+  /* USER CODE END SPI2_Init 0 */
+
+  /* USER CODE BEGIN SPI2_Init 1 */
+
+  /* USER CODE END SPI2_Init 1 */
+  /* SPI2 parameter configuration*/
+  hspi2.Instance = SPI2;
+  hspi2.Init.Mode = SPI_MODE_MASTER;
+  hspi2.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi2.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi2.Init.CLKPhase = SPI_PHASE_2EDGE;
+  hspi2.Init.NSS = SPI_NSS_SOFT;
+  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
+  hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi2.Init.CRCPolynomial = 10;
+  if (HAL_SPI_Init(&hspi2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN SPI2_Init 2 */
+
+  /* USER CODE END SPI2_Init 2 */
 
 }
 
@@ -402,7 +445,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, SYNC_Pin|SPI1_CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : B1_Pin DRY_Pin */
   GPIO_InitStruct.Pin = B1_Pin|DRY_Pin;
@@ -410,12 +453,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : SPI1_CS_Pin */
-  GPIO_InitStruct.Pin = SPI1_CS_Pin;
+  /*Configure GPIO pins : SYNC_Pin SPI1_CS_Pin */
+  GPIO_InitStruct.Pin = SYNC_Pin|SPI1_CS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(SPI1_CS_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
@@ -450,33 +493,45 @@ int32_t ad717x_app_initialize(void)
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if(GPIO_Pin == DRY_Pin) {
+	  adc_channel_offset++;
 	  if(spi_status == READING)
 	  {
+//		  uint8_t Tx = 0x40;
+		  uint8_t Rx[8] = {0};
+//		  Rx[0] = 0x40;
+//		  HAL_SPI_TransmitReceive(SPI, &Tx, Rx, 2, 10);
+//		  HAL_SPI_Receive(SPI, Rx, 1, 100);
+//		  adc_channel_offset = Rx[0] & 0x0f;
+
 			ad717x_st_reg *pReg = (ad717x_st_reg*)spi_read_reg.pReg;
-			uint8_t Rx[8] = {0};
+//			uint8_t Rx[8] = {0};
 			HAL_SPI_Transmit(SPI, &spi_read_reg.Tx, 1, 100);
 
 			HAL_SPI_Receive(SPI, Rx, pReg->size, 100);
 
 
 			pReg->value = 0;
-			for(int i = 0; i < pReg->size; i++) {
+			int data_size = pReg->size;
+			if(pReg->addr == 0x04)
+				data_size = 3;
+			for(int i = 0; i < data_size; i++) {
 				pReg->value <<= 8;
 				pReg->value += Rx[i];
 			}
 		  	spi_status = IDLE;
-		  	if(pReg->addr == 0x04) //if it is read reg
+		  	if(pReg->addr == 0x04) //if it is read data
 		  	{
 
 		  		if(adc_sm == ADC_IDLE)
 		  		{
 		  			float data = (((float) pReg->value / (1<<23))-1) * 25;
 					char hexString[24];
-					sprintf(hexString, "{inf,\r\n%.4f,end}\r\n", data);
+					sprintf(hexString, "{inf,\r\n%u %.4f,end}\r\n", Rx[3], data);
 					send_string(hexString);
 		  		}
 		  		else
 		  		{
+		  			adc_channel_offset = Rx[3];
 		  			adc_to_buf(pReg->value);
 		  			adc_sm = ADC_IDLE;
 		  			spi_status = SENDING;
@@ -519,25 +574,70 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	  {
 		  adc_sm = ADC_READING;
 		  AD717X_ReadRegister(pad717x_dev, 4);
-//		  spi_status = SPI_NOP;
-//		  uint8_t Tx = 0x47;
-//		  uint8_t Rx[4] = {0};
-////		  HAL_SPI_Transmit(SPI, &Tx, 1, 10);
-////		  HAL_SPI_Receive(SPI, Rx, 4, 100);
-//		  uint32_t receivedData = 0;
-//		  for(int i = 0; i < 4; i++) {
-//			  receivedData <<= 8;
-//			  receivedData += Rx[i];
-//		  }
-//		  adc_to_buf(receivedData);
-//		  spi_status = SENDING;
-//		  char hexString[9];
-//		  sprintf(hexString, "%lu\r\n", HAL_GetTick());
-//		  send_string(hexString);
+
+	  }
+	  else if(spi_status == CHANNEL_OFFSET)
+	  {
+		  uint8_t Tx = 0x40;
+		  uint8_t Rx[2] = {0};
+		  HAL_SPI_Transmit(SPI, &Tx, 1, 10);
+		  HAL_SPI_Receive(SPI, Rx, 2, 100);
+		  adc_channel_offset = Rx[1];
+		  spi_status = SENDING;
 	  }
   } else {
       __NOP();
   }
+}
+
+void delay_us(uint32_t us)
+{
+	uint32_t t_start = htim2.Instance->CNT;
+	while(htim2.Instance->CNT - t_start < us);
+}
+
+void dac_readreg(uint8_t addr)
+{
+	uint8_t Tx[3] = {addr,0,0};
+	uint8_t Rx[3] = {0};
+	HAL_GPIO_WritePin(SYNC_GPIO_Port, SYNC_Pin, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(&hspi2, Tx, 3, 100);
+//	delay_us(2);
+	HAL_GPIO_WritePin(SYNC_GPIO_Port, SYNC_Pin, GPIO_PIN_SET);
+	HAL_Delay(1);
+	HAL_GPIO_WritePin(SYNC_GPIO_Port, SYNC_Pin, GPIO_PIN_RESET);
+	HAL_SPI_Receive(&hspi2, Rx, 3, 100);
+//	delay_us(2);
+	HAL_GPIO_WritePin(SYNC_GPIO_Port, SYNC_Pin, GPIO_PIN_SET);
+
+	HAL_UART_Transmit(PC_UART,Rx,3,10);
+//	pReg->value = 0;
+//	for(int i = 0; i < pReg->size; i++) {
+//		pReg->value <<= 8;
+//		pReg->value += Rx[i];
+//	}
+}
+
+void dac_writereg(uint8_t addr, uint16_t value)
+{
+	uint8_t Tx[3] = {addr,(value & 0xFF00) >> 8, (value & 0x00FF) >> 0};
+	uint8_t Rx[3] = {0};
+	HAL_GPIO_WritePin(SYNC_GPIO_Port, SYNC_Pin, GPIO_PIN_RESET);
+	HAL_SPI_Transmit(&hspi2, Tx, 3, 100);
+//	delay_us(2);
+	HAL_GPIO_WritePin(SYNC_GPIO_Port, SYNC_Pin, GPIO_PIN_SET);
+//	HAL_Delay(1);
+//	HAL_GPIO_WritePin(SYNC_GPIO_Port, SYNC_Pin, GPIO_PIN_RESET);
+//	HAL_SPI_Receive(&hspi2, Rx, 3, 100);
+////	delay_us(2);
+//	HAL_GPIO_WritePin(SYNC_GPIO_Port, SYNC_Pin, GPIO_PIN_SET);
+//
+//	HAL_UART_Transmit(PC_UART,Rx,3,10);
+//	pReg->value = 0;
+//	for(int i = 0; i < pReg->size; i++) {
+//		pReg->value <<= 8;
+//		pReg->value += Rx[i];
+//	}
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)

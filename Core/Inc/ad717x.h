@@ -285,6 +285,8 @@ typedef struct {
 	struct ad717x_filtcon filter_configuration[AD717x_MAX_SETUPS];
 	/* ADC Mode */
 	enum ad717x_mode mode;
+	/* Is data_stat enabled? */
+	bool data_stat;
 } ad717x_dev;
 
 typedef struct {
@@ -611,6 +613,11 @@ int32_t ad717x_configure_device_odr(ad717x_dev *dev, uint8_t filtcon_id,
 int ad717x_enable_input_buffer(ad717x_dev* device,
 			       bool inbuf_en, bool refbuf_en, uint8_t setup_id);
 
+/* Configure Clock source: 3 is external */
+void ad717x_set_clock(ad717x_dev *dev, uint32_t clcck_sel);
+
+/* Enable or Disable DATA_STAT */
+void ad717x_set_data_stat(ad717x_dev *dev, bool stat);
 
 // Some Extra NO-OS FD
 
