@@ -13,6 +13,7 @@
 
 extern UART_HandleTypeDef huart2;
 extern SPI_HandleTypeDef hspi1;
+extern SPI_HandleTypeDef hspi2;
 extern TIM_HandleTypeDef htim2;
 extern uint8_t uart_buffer[];
 extern uint8_t tx_buffer[];
@@ -30,14 +31,21 @@ void adc_to_buf(uint32_t new_val);
 uint32_t read_adc_data();
 void dac_readreg(uint8_t addr);
 void dac_writereg(uint8_t addr, uint16_t value);
+
+uint32_t dac_read(uint8_t addr, int print);
+void dac_write(uint8_t addr, uint16_t value);
+void dac_update(float v);
+void dac_init(int num);
 //extern uint8_t spi_read_reg;
 
 #define PC_UART &huart2
 #define SPI &hspi1
+#define DAC_SPI &hspi2
 #define UART_BUFFER_SIZE 1024
 #define ADC_BUFFER_SIZE 50
 #define TIM htim2
 #define ENABLED_CHANNELS 2
+#define DAC_MAX_TRY 5
 
 enum SPI_STATUS {
   IDLE,

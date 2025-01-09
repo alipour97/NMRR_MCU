@@ -106,11 +106,16 @@ extern void handle_command(char* txt_in)
 	}
 	else if(!strcmp(command, "dac_read"))
 	{
-		dac_readreg(addr);
+		dac_read(addr, 1);
 	}
 	else if(!strcmp(command, "dac_write"))
 	{
-		dac_writereg(addr, (uint16_t)value);
+		dac_write(addr, (uint16_t)value);
+	}
+	else if(!strcmp(command, "dac_update"))
+	{
+		value = (uint16_t)strtoul(value_str, NULL, 0);
+		dac_update((float)value/1000);
 	}
 	else{
 		send_string("{Unknown msg,end}\r\n");

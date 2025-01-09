@@ -1,6 +1,7 @@
 "./Core/Src/ad5761r.o"
 "./Core/Src/ad717x.o"
 "./Core/Src/adc.o"
+"./Core/Src/dac.o"
 "./Core/Src/handle_uart.o"
 "./Core/Src/main.o"
 "./Core/Src/spi.o"

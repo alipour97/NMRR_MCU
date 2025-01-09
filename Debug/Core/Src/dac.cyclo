@@ -1,0 +1,4 @@
+../Core/Src/dac.c:13:10:dac_read	2
+../Core/Src/dac.c:39:6:dac_write	2
+../Core/Src/dac.c:52:6:dac_update	1
+../Core/Src/dac.c:58:6:dac_init	3

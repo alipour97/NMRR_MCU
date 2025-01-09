@@ -176,6 +176,8 @@ int main(void)
 
   ad717x_set_data_stat(pad717x_dev, true);
 
+
+
   // Initial Message for PC:
   char *init_msg = "{inf,\r\nWelcome to Pourostad Project,end}\r\n";
   HAL_UART_Transmit(PC_UART, (uint8_t*)init_msg, strlen(init_msg), 10);
@@ -186,6 +188,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   htim2.Instance->CNT = 0;
   HAL_TIM_Base_Start(&htim2);
+  dac_init(0); // init DAC for the first time
   while (1)
   {
 
@@ -315,7 +318,7 @@ static void MX_SPI2_Init(void)
   hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi2.Init.CLKPhase = SPI_PHASE_2EDGE;
   hspi2.Init.NSS = SPI_NSS_SOFT;
-  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
+  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
   hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -445,7 +448,10 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, SYNC_Pin|SPI1_CS_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(SYNC_GPIO_Port, SYNC_Pin, GPIO_PIN_SET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : B1_Pin DRY_Pin */
   GPIO_InitStruct.Pin = B1_Pin|DRY_Pin;
@@ -604,13 +610,16 @@ void dac_readreg(uint8_t addr)
 	HAL_SPI_Transmit(&hspi2, Tx, 3, 100);
 //	delay_us(2);
 	HAL_GPIO_WritePin(SYNC_GPIO_Port, SYNC_Pin, GPIO_PIN_SET);
-	HAL_Delay(1);
+	delay_us(2);
 	HAL_GPIO_WritePin(SYNC_GPIO_Port, SYNC_Pin, GPIO_PIN_RESET);
 	HAL_SPI_Receive(&hspi2, Rx, 3, 100);
 //	delay_us(2);
 	HAL_GPIO_WritePin(SYNC_GPIO_Port, SYNC_Pin, GPIO_PIN_SET);
 
-	HAL_UART_Transmit(PC_UART,Rx,3,10);
+	char hexString[35];  // Buffer to store "0x" + 4 hex digits + null terminator
+	sprintf(hexString, "{inf,\r\ndac,0x%02x%02x%02x,end}\r\n", Rx[0], Rx[1], Rx[2]);  // Format as hex string with "0x" prefix
+	send_string(hexString);
+//	HAL_UART_Transmit(PC_UART,Rx,3,10);
 //	pReg->value = 0;
 //	for(int i = 0; i < pReg->size; i++) {
 //		pReg->value <<= 8;
@@ -621,10 +630,8 @@ void dac_readreg(uint8_t addr)
 void dac_writereg(uint8_t addr, uint16_t value)
 {
 	uint8_t Tx[3] = {addr,(value & 0xFF00) >> 8, (value & 0x00FF) >> 0};
-	uint8_t Rx[3] = {0};
 	HAL_GPIO_WritePin(SYNC_GPIO_Port, SYNC_Pin, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&hspi2, Tx, 3, 100);
-//	delay_us(2);
 	HAL_GPIO_WritePin(SYNC_GPIO_Port, SYNC_Pin, GPIO_PIN_SET);
 //	HAL_Delay(1);
 //	HAL_GPIO_WritePin(SYNC_GPIO_Port, SYNC_Pin, GPIO_PIN_RESET);
