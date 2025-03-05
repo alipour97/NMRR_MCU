@@ -2,3 +2,6 @@
 ../Core/Src/dac.c:39:6:dac_write	24	static
 ../Core/Src/dac.c:52:6:dac_update	24	static
 ../Core/Src/dac.c:58:6:dac_init	24	static
+../Core/Src/dac.c:96:6:new_pattern	48	static
+../Core/Src/dac.c:111:6:bulk_pattern	48	static
+../Core/Src/dac.c:122:6:check_pattern	4	static

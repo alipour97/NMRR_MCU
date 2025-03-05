@@ -63,6 +63,10 @@ uint32_t tq_buff[ADC_BUFFER_SIZE];
 uint16_t volatile adc_buff_idx = 0;
 uint32_t adc_channel_offset = 0;
 
+float DAC_pattern[DAC_PATTERN_SIZE];
+uint16_t DAC_length = 0;
+uint16_t DAC_idx = 0;;
+
 extern ad717x_st_reg ad4111_regs[];
 
 ad717x_dev *pad717x_dev = NULL;
@@ -532,7 +536,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		  		{
 		  			float data = (((float) pReg->value / (1<<23))-1) * 25;
 					char hexString[24];
-					sprintf(hexString, "{inf,\r\n%u %.4f,end}\r\n", Rx[3], data);
+					sprintf(hexString, "{inf,\r\n%u %.4f,end}", Rx[3], data);
 					send_string(hexString);
 		  		}
 		  		else

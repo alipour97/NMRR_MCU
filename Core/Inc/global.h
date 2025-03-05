@@ -25,8 +25,12 @@ extern uint32_t tq_time_buff[];
 extern volatile uint16_t adc_buff_idx;
 extern uint32_t adc_channel_offset;
 
-
+extern float DAC_pattern[];
+extern uint16_t DAC_idx;
+extern uint16_t DAC_length;
 // function declarationCNY
+void delay_us(uint32_t us);
+
 void adc_to_buf(uint32_t new_val);
 uint32_t read_adc_data();
 void dac_readreg(uint8_t addr);
@@ -36,6 +40,9 @@ uint32_t dac_read(uint8_t addr, int print);
 void dac_write(uint8_t addr, uint16_t value);
 void dac_update(float v);
 void dac_init(int num);
+void new_pattern(uint16_t length, uint8_t* pattern_ptr);
+void bulk_pattern(uint16_t length, uint8_t* pattern_ptr);
+void check_pattern();
 //extern uint8_t spi_read_reg;
 
 #define PC_UART &huart2
@@ -43,9 +50,12 @@ void dac_init(int num);
 #define DAC_SPI &hspi2
 #define UART_BUFFER_SIZE 1024
 #define ADC_BUFFER_SIZE 50
+#define DAC_PATTERN_SIZE 30 * 1000
+#define DAC_BULK_SIZE 250
 #define TIM htim2
 #define ENABLED_CHANNELS 2
 #define DAC_MAX_TRY 5
+#define TS 0.001
 
 enum SPI_STATUS {
   IDLE,

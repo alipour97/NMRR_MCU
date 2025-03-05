@@ -62,7 +62,24 @@ extern void handle_command(char* txt_in)
 	{
 		addr = (uint8_t)strtoul(addr_str, NULL, 16);
 		value = (uint32_t)strtoul(value_str, NULL, 16);
-	} else return;
+	}
+	else if(strstr(command, "pattern") != NULL) // if command contains "pattern", it may have '\0' and string search doens't work. so check it separately
+	{
+		uint16_t bulk = (uint16_t)strtoul(addr_str, NULL, 10);
+		endptr = (bulk < 250) ? value_str + bulk * sizeof(float) : value_str + DAC_BULK_SIZE * sizeof(float);
+		if(*(endptr) != '}') return;
+
+		if(!strcmp(command, "pattern_init"))
+			new_pattern(bulk, (uint8_t*)value_str);
+		else if(!strcmp(command, "pattern_bulk"))
+			bulk_pattern(bulk, (uint8_t*)value_str);
+		else if(!strcmp(command, "pattern_end"))
+			check_pattern();
+
+		reset_uart();
+		return;
+	}
+	else return;
 	if(!strcmp(command, "get_id")){
 		spi_status = GETID;
 	}
@@ -117,6 +134,7 @@ extern void handle_command(char* txt_in)
 		value = (uint16_t)strtoul(value_str, NULL, 0);
 		dac_update((float)value/1000);
 	}
+
 	else{
 		send_string("{Unknown msg,end}\r\n");
 		send_string(command);

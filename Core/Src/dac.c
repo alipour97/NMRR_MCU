@@ -92,3 +92,33 @@ void dac_init(int num)
 
 
 }
+
+void new_pattern(uint16_t length, uint8_t* pattern_ptr)
+{
+	DAC_idx = 0;
+	DAC_length = length;
+	memset(DAC_pattern, 0, DAC_PATTERN_SIZE);
+	length = (length < DAC_BULK_SIZE) ? length : DAC_BULK_SIZE; // if length is more than BULK_SIZE, just copy the BULK
+	memcpy(DAC_pattern, pattern_ptr, length * sizeof(float));
+	DAC_idx += length;
+
+//	send_string("{dac,\r\n");
+	char message[30];
+	sprintf(message, "{dac,\r\n%d,end}\r\n", DAC_idx);
+	send_string(message);
+}
+
+void bulk_pattern(uint16_t length, uint8_t* pattern_ptr)
+{
+	memcpy(DAC_pattern + DAC_idx, pattern_ptr, length * sizeof(float));
+	DAC_idx += length;
+
+//	send_string("{dac,end}\r\n");
+	char message[30];
+	sprintf(message, "{dac,\r\n%d,end}\r\n", DAC_idx);
+	send_string(message);
+}
+// Check if pattern loads correctly -> To-Do
+void check_pattern()
+{
+}
