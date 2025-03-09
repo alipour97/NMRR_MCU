@@ -97,28 +97,14 @@ extern void handle_command(char* txt_in)
 	else if(!strcmp(command, "send"))
 	{
 		if(spi_status != SENDING && adc_sm == ADC_IDLE)
-		{
-
-			adc_buff_idx = 0;
-			TIM.Instance->CNT = 0;
-//			ad717x_set_adc_mode(pad717x_dev, SINGLE);
-//			delay_us(100);
-//			spi_status = READING;
-//			adc_sm = ADC_READING;
-//			AD717X_ReadRegister(pad717x_dev, 0x04);
-//			adc_channel_offset = AD717X_GetReg(pad717x_dev, AD717X_STATUS_REG)->value & 0x000f;
-			spi_status = SENDING;
-//			ad717x_set_adc_mode(pad717x_dev, CONTINUOUS);
-		}
+			adc_start(true);
 		else
-		{
-			spi_status = IDLE;
-			adc_sm = ADC_IDLE;
-		}
+			adc_start(false);
 	}
+	else if(!strcmp(command, "start"))
+		if(addr) adc_start(true); else adc_start(false);
 	else if(!strcmp(command, "adc_mode"))
 	{
-//		if(addr == 0)
 		ad717x_set_adc_mode(pad717x_dev, addr);
 	}
 	else if(!strcmp(command, "dac_read"))

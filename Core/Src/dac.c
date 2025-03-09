@@ -95,6 +95,7 @@ void dac_init(int num)
 
 void new_pattern(uint16_t length, uint8_t* pattern_ptr)
 {
+	adc_start(0);
 	DAC_idx = 0;
 	DAC_length = length;
 	memset(DAC_pattern, 0, DAC_PATTERN_SIZE);
@@ -117,6 +118,12 @@ void bulk_pattern(uint16_t length, uint8_t* pattern_ptr)
 	char message[30];
 	sprintf(message, "{dac,\r\n%d,end}\r\n", DAC_idx);
 	send_string(message);
+	if(DAC_idx >= DAC_length)
+	{
+		DAC_idx = 0;
+		HAL_TIM_Base_Start_IT(&htim3);
+		adc_start(1);
+	}
 }
 // Check if pattern loads correctly -> To-Do
 void check_pattern()

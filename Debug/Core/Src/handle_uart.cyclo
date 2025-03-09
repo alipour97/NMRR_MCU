@@ -1,5 +1,5 @@
 ../Core/Src/handle_uart.c:17:12:check_command	3
 ../Core/Src/handle_uart.c:38:13:send_string	1
 ../Core/Src/handle_uart.c:43:13:reset_uart	1
-../Core/Src/handle_uart.c:51:13:handle_command	18
-../Core/Src/handle_uart.c:148:9:no_os_spi_write_and_read	1
+../Core/Src/handle_uart.c:51:13:handle_command	20
+../Core/Src/handle_uart.c:134:9:no_os_spi_write_and_read	1

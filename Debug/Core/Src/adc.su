@@ -1,3 +1,4 @@
 ../Core/Src/adc.c:15:6:adc_to_buf	16	static
 ../Core/Src/adc.c:48:6:send_adc_data	16	static
 ../Core/Src/adc.c:66:10:read_adc_data	24	static
+../Core/Src/adc.c:80:6:adc_start	16	static

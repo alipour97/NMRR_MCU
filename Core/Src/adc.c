@@ -76,3 +76,21 @@ uint32_t read_adc_data()
 	}
 	return receivedData;
 }
+
+void adc_start(int start)
+{
+	if(start)
+	{
+		adc_buff_idx = 0;
+		TIM.Instance->CNT = 0;
+		spi_status = SENDING;
+	}
+	else
+	{
+		adc_buff_idx = 0;
+		TIM.Instance->CNT = 0;
+		spi_status = IDLE;
+		adc_sm = ADC_IDLE;
+	}
+
+}

@@ -15,6 +15,7 @@ extern UART_HandleTypeDef huart2;
 extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi2;
 extern TIM_HandleTypeDef htim2;
+extern TIM_HandleTypeDef htim3;
 extern uint8_t uart_buffer[];
 extern uint8_t tx_buffer[];
 
@@ -31,6 +32,7 @@ extern uint16_t DAC_length;
 // function declarationCNY
 void delay_us(uint32_t us);
 
+void adc_start(int start);
 void adc_to_buf(uint32_t new_val);
 uint32_t read_adc_data();
 void dac_readreg(uint8_t addr);
