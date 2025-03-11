@@ -55,18 +55,25 @@ DMA_HandleTypeDef hdma_usart2_tx;
 /* USER CODE BEGIN PV */
 uint8_t uart_buffer[UART_BUFFER_SIZE];
 uint8_t tx_buffer[7+7+4*sizeof(uint32_t) * ADC_BUFFER_SIZE] = {0};
+uint16_t uart_timeout = 0; // if there is a specific number iterations and no commands applied, reset UART
 
-uint32_t time_buff[ADC_BUFFER_SIZE];
-uint32_t adc_buff[ADC_BUFFER_SIZE];
+uint32_t pos_time_buff[ADC_BUFFER_SIZE];
+uint32_t pos_buff[ADC_BUFFER_SIZE];
+uint32_t pos_window[WINDOW_BUFFER_SIZE];
+uint32_t tq_window[WINDOW_BUFFER_SIZE];
 uint32_t tq_time_buff[ADC_BUFFER_SIZE];
 uint32_t tq_buff[ADC_BUFFER_SIZE];
 
 uint16_t volatile adc_buff_idx = 0;
+uint16_t volatile window_buff_idx = 0;
 uint32_t adc_channel_offset = 0;
+uint8_t volatile ADC_EN = 0;
 
 float DAC_pattern[DAC_PATTERN_SIZE];
 uint16_t DAC_length = 0;
 uint16_t DAC_idx = 0;;
+uint8_t volatile DAC_EN = 0;
+uint8_t volatile DAC_last_bulk = 0;
 
 extern ad717x_st_reg ad4111_regs[];
 
@@ -145,7 +152,7 @@ int main(void)
   ad717x_app_initialize();
 
 
-  ad717x_configure_device_odr(pad717x_dev, 0, sps_1007);
+  ad717x_configure_device_odr(pad717x_dev, 0, sps_10417);
   HAL_Delay(10);
   ad717x_set_adc_mode(pad717x_dev, CONTINUOUS);
 
@@ -195,6 +202,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   htim2.Instance->CNT = 0;
   HAL_TIM_Base_Start(&htim2);
+  HAL_TIM_Base_Start_IT(&htim3);
   dac_init(0); // init DAC for the first time
   while (1)
   {
@@ -708,14 +716,18 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if(htim->Instance == TIM3)
 	{
-		if(DAC_idx >= DAC_length)
+		if(ADC_EN)
+			adc_window();
+		if(DAC_EN)
 		{
-			DAC_idx = 0;
-			HAL_TIM_Base_Stop(&htim3);
-			send_string("{cmd,\r\nend_pattern,end}\r\n");
-			return;
+			if(DAC_idx >= DAC_length)
+			{
+				DAC_last_bulk = 1; // It should be in state machine and in next data sending, we send end pattern, also;
+
+				return;
+			}
+			dac_update(DAC_pattern[DAC_idx++]);
 		}
-		dac_update(DAC_pattern[DAC_idx++]);
 	}
 }
 /* USER CODE END 4 */

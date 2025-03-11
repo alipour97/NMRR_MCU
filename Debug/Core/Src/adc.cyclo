@@ -1,4 +1,5 @@
-../Core/Src/adc.c:15:6:adc_to_buf	3
-../Core/Src/adc.c:48:6:send_adc_data	1
-../Core/Src/adc.c:66:10:read_adc_data	2
-../Core/Src/adc.c:80:6:adc_start	2
+../Core/Src/adc.c:15:6:adc_window	4
+../Core/Src/adc.c:51:6:adc_to_buf	2
+../Core/Src/adc.c:76:6:send_adc_data	1
+../Core/Src/adc.c:91:10:read_adc_data	2
+../Core/Src/adc.c:105:6:adc_start	2

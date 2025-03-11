@@ -18,22 +18,31 @@ extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
 extern uint8_t uart_buffer[];
 extern uint8_t tx_buffer[];
+extern uint16_t uart_timeout;
 
-extern uint32_t time_buff[];
-extern uint32_t adc_buff[];
+extern uint32_t pos_time_buff[];
+extern uint32_t pos_buff[];
+extern uint32_t pos_window[];
+extern uint32_t tq_window[];
 extern uint32_t tq_buff[];
 extern uint32_t tq_time_buff[];
 extern volatile uint16_t adc_buff_idx;
+extern volatile uint16_t window_buff_idx;
 extern uint32_t adc_channel_offset;
+extern volatile uint8_t ADC_EN;
 
 extern float DAC_pattern[];
 extern uint16_t DAC_idx;
 extern uint16_t DAC_length;
+extern volatile uint8_t DAC_EN;
+extern volatile uint8_t DAC_last_bulk;
+
 // function declarationCNY
 void delay_us(uint32_t us);
 
 void adc_start(int start);
 void adc_to_buf(uint32_t new_val);
+void adc_window();
 uint32_t read_adc_data();
 void dac_readreg(uint8_t addr);
 void dac_writereg(uint8_t addr, uint16_t value);
@@ -52,6 +61,7 @@ void check_pattern();
 #define DAC_SPI &hspi2
 #define UART_BUFFER_SIZE 1024
 #define ADC_BUFFER_SIZE 50
+#define WINDOW_BUFFER_SIZE 10
 #define DAC_PATTERN_SIZE 30 * 1000
 #define DAC_BULK_SIZE 250
 #define TIM htim2

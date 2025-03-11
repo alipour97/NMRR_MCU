@@ -3,5 +3,5 @@
 ../Core/Src/dac.c:52:6:dac_update	1
 ../Core/Src/dac.c:58:6:dac_init	3
 ../Core/Src/dac.c:96:6:new_pattern	1
-../Core/Src/dac.c:112:6:bulk_pattern	2
-../Core/Src/dac.c:129:6:check_pattern	1
+../Core/Src/dac.c:113:6:bulk_pattern	2
+../Core/Src/dac.c:130:6:check_pattern	1

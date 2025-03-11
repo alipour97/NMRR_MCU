@@ -29,7 +29,10 @@ extern int check_command(void)
 		free(command);
 		return 1;
 	}
-	else if(strlen((char*) uart_buffer) > 200){
+	else if(strlen((char*) uart_buffer) > 200 || uart_timeout > 200){
+		send_string("inf,\r\n");
+		send_string(uart_buffer);
+		send_string(",end}\r\n");
 		reset_uart();
 	}
 	return 0;
