@@ -31,10 +31,12 @@ void adc_window()
 	tq_buff[adc_buff_idx] = tq / i; // copy mean of tq window to tq_buff
 	adc_buff_idx++;
 	window_buff_idx = 0;
-	current_pos = ((float)pos / (1 << 23) - 1) * 25;
-	current_tq = ((float)tq / (1 << 23) - 1) * 25;
-	if(!DAC_EN)
-		init_motor_pos = current_pos;
+	if(i > 0)
+	{
+		current_pos = ((float)pos / (1 << 23) - 1) * 25 * 12 / i;
+		current_tq = ((float)tq / (1 << 23) - 1) * 25 / i;
+	}
+
 	if(adc_buff_idx >= ADC_BUFFER_SIZE)
 	{
 		send_adc_data();

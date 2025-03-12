@@ -95,6 +95,7 @@ void dac_init(int num)
 
 void new_pattern(uint16_t length, uint8_t* pattern_ptr)
 {
+	init_motor_pos = current_pos;
 	adc_start(0);
 	DAC_EN = 0;
 	DAC_idx = 0;

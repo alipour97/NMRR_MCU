@@ -728,10 +728,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 				return;
 			}
-			dac_update(DAC_pattern[DAC_idx++] + init_motor_pos);
+			dac_update(DAC_pattern[DAC_idx++]);
 		}
-		else
-			dac_update(init_motor_pos);
+//		else
+//			dac_update(init_motor_pos);
 	}
 }
 /* USER CODE END 4 */
