@@ -37,6 +37,10 @@ extern uint16_t DAC_length;
 extern volatile uint8_t DAC_EN;
 extern volatile uint8_t DAC_last_bulk;
 
+extern float volatile current_pos;
+extern float volatile current_tq;
+extern float volatile init_motor_pos;
+
 // function declarationCNY
 void delay_us(uint32_t us);
 

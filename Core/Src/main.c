@@ -84,13 +84,15 @@ static uint8_t ad717x_reg_count = sizeof(ad4111_regs) / sizeof(ad4111_regs[0]);
 volatile enum SPI_STATUS spi_status = IDLE;
 volatile enum ADC_SM adc_sm = ADC_IDLE;
 
-
-
 struct spi_read spi_read_reg = {0,NULL};
 struct spi_write spi_write_reg = {{0},0,NULL};
 //uint8_t spi_read_reg = 0x00;
 // Pointer to the struct representing the AD717x device
 
+
+float volatile current_pos = 0;
+float volatile current_tq = 0;
+float volatile init_motor_pos = 0;
 
 // Device setup
 /* USER CODE END PV */
@@ -726,8 +728,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 				return;
 			}
-			dac_update(DAC_pattern[DAC_idx++]);
+			dac_update(DAC_pattern[DAC_idx++] + init_motor_pos);
 		}
+		else
+			dac_update(init_motor_pos);
 	}
 }
 /* USER CODE END 4 */
